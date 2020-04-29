@@ -4,7 +4,14 @@ body {
 }
 
 canvas {
-  position: absolute;
+  position: fixed;
+  top: 0;
   width: 100%;
   height: 100%;
+}
+
+.scroll-container {
+  height: 1000vh;
+  visibility: hidden;
+  opacity: 0;
 }
