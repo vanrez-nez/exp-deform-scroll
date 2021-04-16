@@ -49,7 +49,7 @@ export default class Demo {
     const mat = new THREE.ShaderMaterial({
       wireframe: false,
       uniforms: {
-        uForce: { value: 2.0 },
+        uForce: { value: 0.0 },
         tMap: { value: new THREE.TextureLoader().load(image) },
       },
       vertexShader: vertexImage,
@@ -73,7 +73,7 @@ export default class Demo {
     const { scene, renderer, camera } = this.app;
     this.scrollForce = 0;
     this.lastTop = 0;
-    camera.position.set(0, 0, 5);
+    camera.position.set(0, 0, 1);
     // Setup composer for postprocessing effects
     const composer = new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene, camera));
@@ -111,24 +111,27 @@ export default class Demo {
     const { planes, effects } = this;
     const yPos = window.scrollY || window.pageYOffset;
     const delta = Math.abs(yPos - this.lastTop);
-    if (delta !== 0) {
-      this.scrollForce = lerp(this.scrollForce, this.scrollForce + delta * 0.003, 0.25);
-    }
+
+    // smooth scroll force delta
+    this.scrollForce = lerp(this.scrollForce, this.scrollForce + delta * 0.003, 0.45);
 
     this.lastTop = yPos;
+    // pixel to screen unit
+    const screenUnits = visibleHeightAtZDepth(this.app.camera, 0) / window.innerHeight;
     for (let i = 0; i < planes.length; i++) {
       const { mesh, offset } = planes[i];
       const { position, material } = mesh;
       // Should calc magic number from pixels in view height
-      const targetY = ((yPos > 0 ? yPos : 0.01) / 55.38) - offset;
+
+      const targetY = ((yPos > 0 ? yPos : 0.01) * screenUnits) - offset;
       position.y = lerp(position.y, targetY, 0.05);
-      //material.uniforms.uForce.value = this.scrollForce;
+      material.uniforms.uForce.value = this.scrollForce;
     }
-    this.scrollForce = clamp(this.scrollForce * 0.986, 0, 1);
+
+    this.scrollForce = clamp(this.scrollForce * 0.94, -2, 2);
     effects.bloom.intensity = this.scrollForce * 4;
     //effects.vignette.darkness = this.scrollForce * 2;
-    effects.vignette.uniforms.get('darkness').value = 0.2 + this.scrollForce * 0.8;
-
+    effects.vignette.uniforms.get('darkness').value = 0.2 + this.scrollForce * 0.25;
   }
 
   onResize(width, height) {
